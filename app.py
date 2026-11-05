@@ -24,13 +24,11 @@ POSSIBLE_COOKIE_PATHS = [
 def get_cookie_path():
     for path in POSSIBLE_COOKIE_PATHS:
         if os.path.exists(path):
-            # Render salt okunur olduğu için çerezi yazılabilir /tmp klasörüne kopyalıyoruz
             writable_path = '/tmp/cookies.txt'
             try:
                 shutil.copy(path, writable_path)
                 return writable_path
-            except Exception as e:
-                print(f"Kopyalama istisnasi: {e}")
+            except Exception:
                 return path
     return None
 
@@ -48,10 +46,15 @@ def get_ydl_options():
         'quiet': True,
         'no_warnings': True,
         'noplaylist': True,
+        # Android yerine çerezleri destekleyen ve bot filtresine takılmayan TV/Web istemcileri
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'ios', 'web']
+                'player_client': ['tv_embedded', 'mweb', 'web']
             }
+        },
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+            'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7'
         }
     }
     cookie_path = get_cookie_path()
