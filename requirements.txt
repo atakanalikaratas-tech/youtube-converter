@@ -1,5 +1,5 @@
 flask
-yt-dlp
 flask-cors
 static-ffmpeg
 gunicorn
+git+https://github.com/yt-dlp/yt-dlp.git@master
