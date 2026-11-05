@@ -14,8 +14,10 @@ except ImportError:
 app = Flask(__name__)
 CORS(app)
 
+# Çerez dosyasının yolu (Render veya yerel dizinde cookies.txt varsa kullanır)
+COOKIE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cookies.txt')
+
 def clean_youtube_url(url):
-    """Linkte &list= veya playlist parametreleri varsa temizler, sadece tek videoya odaklar."""
     match = re.search(r'(https?://(?:www\.)?youtube\.com/watch\?v=[\w-]+)', url)
     if match:
         return match.group(1)
@@ -24,16 +26,21 @@ def clean_youtube_url(url):
         return match_short.group(1)
     return url
 
-COMMON_YTDL_OPTS = {
-    'quiet': True,
-    'no_warnings': True,
-    'noplaylist': True,
-    'extractor_args': {
-        'youtube': {
-            'player_client': ['android', 'ios', 'web']
+def get_ydl_options():
+    opts = {
+        'quiet': True,
+        'no_warnings': True,
+        'noplaylist': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios', 'web']
+            }
         }
     }
-}
+    # Eğer cookies.txt dosyası mevcutsa yt-dlp'ye ekle
+    if os.path.exists(COOKIE_PATH):
+        opts['cookiefile'] = COOKIE_PATH
+    return opts
 
 @app.route('/')
 def home():
@@ -48,7 +55,8 @@ def get_video_info():
     url = clean_youtube_url(raw_url)
 
     try:
-        with yt_dlp.YoutubeDL(COMMON_YTDL_OPTS) as ydl:
+        ydl_opts = get_ydl_options()
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             
             formats = info.get('formats', [])
@@ -82,7 +90,7 @@ def download_video():
     temp_dir = tempfile.mkdtemp()
     output_template = os.path.join(temp_dir, '%(title)s.%(ext)s')
 
-    ydl_opts = dict(COMMON_YTDL_OPTS)
+    ydl_opts = get_ydl_options()
     ydl_opts['outtmpl'] = output_template
 
     if format_type == 'mp3':
