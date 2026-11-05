@@ -14,8 +14,20 @@ except ImportError:
 app = Flask(__name__)
 CORS(app)
 
-# Çerez dosyasının yolu (Render veya yerel dizinde cookies.txt varsa kullanır)
-COOKIE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cookies.txt')
+# Olası tüm çerez konumlarını kontrol eder (Render /etc/secrets yolunu kullanır)
+POSSIBLE_COOKIE_PATHS = [
+    '/etc/secrets/cookies.txt',
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cookies.txt'),
+    'cookies.txt'
+]
+
+def get_cookie_path():
+    for path in POSSIBLE_COOKIE_PATHS:
+        if os.path.exists(path):
+            print(f"--> [BILGI] Cerez dosyasi bulundu: {path}")
+            return path
+    print("--> [UYARI] Cerez dosyasi bulunamadi!")
+    return None
 
 def clean_youtube_url(url):
     match = re.search(r'(https?://(?:www\.)?youtube\.com/watch\?v=[\w-]+)', url)
@@ -37,9 +49,9 @@ def get_ydl_options():
             }
         }
     }
-    # Eğer cookies.txt dosyası mevcutsa yt-dlp'ye ekle
-    if os.path.exists(COOKIE_PATH):
-        opts['cookiefile'] = COOKIE_PATH
+    cookie_path = get_cookie_path()
+    if cookie_path:
+        opts['cookiefile'] = cookie_path
     return opts
 
 @app.route('/')
