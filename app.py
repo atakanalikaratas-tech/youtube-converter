@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 import tempfile
 from flask import Flask, request, jsonify, send_file, render_template
 from flask_cors import CORS
@@ -14,7 +15,6 @@ except ImportError:
 app = Flask(__name__)
 CORS(app)
 
-# Olası tüm çerez konumlarını kontrol eder (Render /etc/secrets yolunu kullanır)
 POSSIBLE_COOKIE_PATHS = [
     '/etc/secrets/cookies.txt',
     os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cookies.txt'),
@@ -24,9 +24,14 @@ POSSIBLE_COOKIE_PATHS = [
 def get_cookie_path():
     for path in POSSIBLE_COOKIE_PATHS:
         if os.path.exists(path):
-            print(f"--> [BILGI] Cerez dosyasi bulundu: {path}")
-            return path
-    print("--> [UYARI] Cerez dosyasi bulunamadi!")
+            # Render salt okunur olduğu için çerezi yazılabilir /tmp klasörüne kopyalıyoruz
+            writable_path = '/tmp/cookies.txt'
+            try:
+                shutil.copy(path, writable_path)
+                return writable_path
+            except Exception as e:
+                print(f"Kopyalama istisnasi: {e}")
+                return path
     return None
 
 def clean_youtube_url(url):
